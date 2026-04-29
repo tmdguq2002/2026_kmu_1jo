@@ -111,25 +111,6 @@ Stacking Ensemble
 
 ---
 
-## 📁 프로젝트 구조 (예정)
-
-```
-├── data/
-│   ├── train.csv
-│   └── test.csv
-├── notebooks/
-│   ├── 01_eda.ipynb
-│   ├── 02_preprocessing.ipynb
-│   ├── 03_baseline.ipynb
-│   └── 04_ensemble.ipynb
-├── src/
-│   ├── preprocess.py
-│   ├── features.py
-│   └── train.py
-├── mlruns/          # MLflow 트래킹
-├── submissions/
-└── README.md
-```
 
 ---
 
