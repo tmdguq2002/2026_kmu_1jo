@@ -1,60 +1,71 @@
-# 🏠 [KMU DS 2026] 1조 주택 가격 예측 프로젝트 최종 상세 보고서
+## 📖 1. 프로젝트 개요 (Overview)
+본 프로젝트는 **Kaggle의 "House Prices: Advanced Regression Techniques"** 데이터를 활용하여, 주택의 물리적 특성, 위치, 품질 등 79개의 다양한 변수를 분석하고 최적의 회귀 모델을 구축하여 판매 가격을 예측합니다.
 
-## 📌 1. 프로젝트 개요 및 배경
-본 프로젝트는 Kaggle의 "House Prices: Advanced Regression Techniques" 데이터셋을 활용하여 주택의 다양한 피처를 기반으로 최종 판매 가격을 예측하는 회귀 분석 모델을 개발하는 것을 목표로 합니다.
-79개의 설명 변수(Explanatory Variables)를 통해 주거 공간의 거의 모든 측면을 분석하며, 데이터의 복잡성과 노이즈를 극복하기 위한 고도화된 머신러닝 기법이 요구됩니다.
+단순한 모델링을 넘어 **데이터 정규성 확보, 도메인 기반 피처 생성, 그리고 최첨단 앙상블 기법**을 통해 예측 성능을 극대화하는 데 중점을 두었습니다.
 
-### 🎯 프로젝트 목표 (KPI)
-* **1차 목표**: 예측 오차의 척도인 RMSLE(Root Mean Squared Logarithmic Error)를 0.13 이하로 낮춤.
-* **2차 목표**: 결정계수(R²)를 0.93 이상으로 끌어올려 모델의 설명력을 극대화함.
-* **핵심 전략**: 데이터 정규성 확보, 도메인 지식 기반 피처 생성, 앙상블 학습을 통한 일반화 성능 강화.
-
----
-
-## 🛠 2. 단계별 상세 수행 과정
-
-### Step 1: 탐색적 데이터 분석(EDA) 및 타겟 변수 전처리
-* 데이터의 분포를 분석한 결과, 타겟 변수인 SalePrice는 우측으로 치우친(Right-skewed) 분포를 보였으며 왜도(Skewness)는 1.88에 달했습니다.
-* 이는 선형 모델의 전제 조건인 정규성을 위배하므로, `np.log1p` 변환을 적용하여 왜도를 0.12로 보정하였습니다.
-* 시각화 도구(Scatter Plot)를 통해 GrLivArea(지상 거주 면적)가 4,000sqft 이상임에도 가격이 매우 낮은 이상치(Outlier) 2건(Index 523, 1298)을 식별하였습니다.
-* 이러한 데이터는 모델에 편향된 정보를 제공할 수 있으므로 제거를 결정하였습니다.
-
-### Step 2: 결측치 처리 및 데이터 정제
-* 결측치 처리는 단순히 평균값으로 대체하는 것이 아니라 변수의 의미에 따라 차등 적용하였습니다.
-* **범주형 변수**: Garage, Basement, Pool 등 부대시설 관련 결측치는 해당 시설의 "부재"를 의미하는 "None"으로 명시적 대치하였습니다.
-* **수치형 변수**: LotFrontage(도로 인접 거리)는 인근 동네(Neighborhood)의 특성이 반영되므로 동네별 중앙값으로 대치하였습니다. 그 외 면적 관련 결측치는 0으로 처리하였습니다.
-* **품질 인코딩**: ExterQual, BsmtQual 등 품질 변수들은 TA(3), Gd(4), Ex(5)와 같이 수치적 순서가 의미를 가지므로 Ordinal Encoding을 적용하여 변수 간의 관계를 보존하였습니다.
-
-### Step 3: 고급 피처 엔지니어링 및 통계적 변환
-* 모델의 성능을 획기적으로 높이기 위해 기존 변수들을 조합한 파생 변수를 생성하였습니다.
-* **TotalSF**: 1stFlrSF + 2ndFlrSF + TotalBsmtSF를 합산하여 집의 실질적인 규모를 나타내는 통합 변수를 생성하였습니다.
-* **QualSF**: TotalSF와 OverallQual을 곱하여 "크면서도 품질이 좋은 집"에 대한 가중치를 부여하였습니다.
-* **Box-Cox 변환**: 75개 이상의 피처에 대해 왜도를 분석하고, 절대값 0.75 이상의 왜도를 가진 수치형 변수들에 대해 Scipy의 `boxcox1p` 변환을 적용하여 정규성을 극대화하였습니다.
-
-### Step 4: 모델링 전략 및 MLflow 실험 관리
-* 단일 모델의 한계를 극복하기 위해 다중 모델 실험을 수행하였으며, 모든 과정은 MLflow SQLite 백엔드에 기록하여 성능 변화를 추적하였습니다.
-* **개별 모델 최적화**: XGBoost와 LightGBM에 대해 `n_estimators`와 `learning_rate`를 세밀하게 조정하며 단일 모델 기준 R² 0.92 수준까지 확보하였습니다.
-* **Stacking Ensemble**: Lasso, Ridge, GBR, XGB, LGBM을 Base Learner로 설정하고, 최종 예측치를 Ridge(Meta Learner)로 결합하여 각 모델의 강점을 결합하고 과적합을 방지하였습니다.
+### 🎯 핵심 목표 (KPI)
+| 목표 지표 | Target | Description |
+| :--- | :--- | :--- |
+| **RMSLE** | **≤ 0.13** | 로그 스케일 기준 오차 최소화 |
+| **R² Score** | **≥ 0.93** | 모델의 설명력 및 예측 신뢰도 확보 |
+| **Strategy** | **Ensemble** | 개별 모델의 편향을 보정하는 Stacking 전략 채택 |
 
 ---
 
-## 📊 3. 최종 성과 분석
+## 🛠 2. 주요 기술 및 프로세스 (Tech Stack & Pipeline)
 
-| 평가 지표 | 목표치 | 최종 달성치 | 비고 |
-| :--- | :--- | :--- | :--- |
-| **RMSLE** | 0.13 이하 | **0.1113** | 달성 |
-| **R² (Price 기준)** | 0.93 이상 | **0.9374** | 달성 |
-| **R² (Log 기준)** | 0.93 이상 | **0.9266** | 근접 |
+### 🧩 Tech Stack
+- **Languages**: Python
+- **Libraries**: Pandas, NumPy, Scikit-learn, XGBoost, LightGBM, Scipy
+- **Experiment Tracking**: MLflow (SQLite Backend)
+- **Transformations**: Log Transform, Box-Cox, Ordinal Encoding
 
-* 최종적으로 프로젝트 초기 목표였던 RMSLE 0.13을 압도적으로 달성하였으며, 실제 가격 기준 R² 역시 0.937을 기록하며 주택 가격의 93% 이상을 설명할 수 있는 모델을 구축하는 데 성공하였습니다.
+### 📈 Data Pipeline & Analysis
+1.  **Exploratory Data Analysis (EDA)**
+    - 타겟 변수(`SalePrice`)의 왜도(1.88) 확인 및 `log1p` 변환을 통한 정규화(0.12).
+    - `GrLivArea` 기반 이상치(Outlier) 탐색 및 제거(Index 523, 1298).
+2.  **Missing Value Imputation**
+    - **범주형**: 부대시설 부재를 의미하는 "None" 명시적 대치.
+    - **수치형**: `LotFrontage`를 인근 동네(`Neighborhood`) 중앙값으로 정밀 대치.
+3.  **Feature Engineering (Advanced)**
+    - **TotalSF**: 1층/2층/지하 면적을 합산하여 실제 거주 규모 피처 생성.
+    - **QualSF**: 면적과 품질 지수를 결합한 가중치 피처 생성.
+    - **Box-Cox**: 왜도 0.75 이상의 수치형 피처에 대해 정규성 극대화 변환 적용.
 
 ---
 
-## 💡 4. 결론 및 향후 개선 방향
-* **향후 계획**: 요즘 바둑 세계에서는 누가 AI와 가장 비슷하게 두냐가 실력의 척도로 여겨지고 있다고 합니다. 그런것처럼  사람의 의견이 들어간 본 프로젝트와 사람의 의견이 일체 들어가지 않은 프로젝트를 수행하여 어느점이 다른지, AI마다 어떻게 접근하여 문제풀이를 하는지 비교하여 보는것도 좋은 공부가 될 것이라 생각됩니다.
+## 🤖 3. 모델링 전략 (Modeling Strategy)
+
+단일 모델의 한계를 극복하기 위해 **Stacking Ensemble** 모델을 구축하였습니다.
+
+- **Base Learners**: `Lasso`, `Ridge`, `Gradient Boosting Regressor`, `XGBoost`, `LightGBM`
+- **Meta Learner**: `Ridge Regression` (과적합 방지 및 최적 가중치 결합)
+- **Experiment Management**: MLflow를 통해 모든 하이퍼파라미터(`n_estimators`, `learning_rate` 등)와 메트릭을 추적하였습니다.
 
 ---
 
-## 👥 5. 프로젝트 팀 (Team 1)
-* **팀장 (Leader)**: 권승협
-* **팀원 (Members)**: 김창희, 장대로, 문일환, 이연준, 박강한, 황현호
+## 📊 4. 프로젝트 성과 (Results)
+
+<div align="center">
+
+| Metric | Target | Final Result | Status |
+| :--- | :---: | :---: | :---: |
+| **RMSLE** | 0.13 | **0.1113** | ✨ **달성** |
+| **R² (Price)** | 0.93 | **0.9374** | ✨ **달성** |
+| **R² (Log)** | 0.93 | **0.9266** | ✅ **근접** |
+
+</div>
+
+> **Insight**: 정밀한 전처리와 Box-Cox 변환이 모델 성능 향상에 결정적인 역할을 수행하였으며, 앙상블 학습을 통해 일반화 성능을 성공적으로 확보하였습니다.
+
+---
+
+## 💡 5. 향후 개선 방향
+- **Bayesian Optimization**: 앙상블 가중치의 세밀한 자동 최적화 적용.
+- **External Data**: 금리, 지역 개발 계획 등 외부 거시 경제 지표 결합을 통한 시계열 예측력 강화.
+
+---
+
+## 👥 6. 팀 정보 (Team 1)
+- **Project Leader**: 권승협 (Team Leader)
+- **Members**: 김창희, 장대로, 문일환, 이연준, 박강한, 황현호
