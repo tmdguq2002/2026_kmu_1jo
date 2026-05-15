@@ -1,263 +1,61 @@
-# KMU DS 2026 Team 1 - House Price Prediction
-
-Kaggle **House Prices - Advanced Regression Techniques** 데이터를 사용해 주택 가격을 예측한 프로젝트입니다.  
-팀 1-Pager 양식의 `WHY / WHAT / WHO / HOW / WHEN / RISK` 구조에 맞춰 분석 노트북을 정리했고, MLflow로 실험 기록을 남겼습니다.
+# [cite_start]🏠 [KMU DS 2026] 1조 주택 가격 예측 프로젝트 최종 상세 보고서 [cite: 1]
 
-## Project Goal
+## 📌 1. 프로젝트 개요 및 배경
+[cite_start]본 프로젝트는 Kaggle의 "House Prices: Advanced Regression Techniques" 데이터셋을 활용하여 주택의 다양한 피처를 기반으로 최종 판매 가격을 예측하는 회귀 분석 모델을 개발하는 것을 목표로 합니다[cite: 3].
+[cite_start]79개의 설명 변수(Explanatory Variables)를 통해 주거 공간의 거의 모든 측면을 분석하며, 데이터의 복잡성과 노이즈를 극복하기 위한 고도화된 머신러닝 기법이 요구됩니다[cite: 4].
 
-주택 특성 데이터를 활용해 객관적인 주택 적정 가격 예측 모델을 개발합니다.
+### 🎯 프로젝트 목표 (KPI)
+* [cite_start]**1차 목표**: 예측 오차의 척도인 RMSLE(Root Mean Squared Logarithmic Error)를 0.13 이하로 낮춤[cite: 6].
+* [cite_start]**2차 목표**: 결정계수(R²)를 0.93 이상으로 끌어올려 모델의 설명력을 극대화함[cite: 6].
+* [cite_start]**핵심 전략**: 데이터 정규성 확보, 도메인 지식 기반 피처 생성, 앙상블 학습을 통한 일반화 성능 강화[cite: 6].
 
-| 목표 | 기준 | 최종 결과 |
-|---|---:|---:|
-| RMSLE | `<= 0.13` | `0.109091` |
-| R²(price) | `>= 0.93` | `0.937399` |
-| R²(log) | `>= 0.93` | `0.924699` |
+---
 
-최종 모델은 **ElasticNet**입니다.  
-RMSLE는 목표를 안정적으로 달성했고, 원 가격 기준 R²도 목표를 넘겼습니다. log 기준 R²는 목표에 근접했으나 소폭 미달입니다.
+## 🛠 2. 단계별 상세 수행 과정
 
-## Repository Structure
+### [cite_start]Step 1: 탐색적 데이터 분석(EDA) 및 타겟 변수 전처리 [cite: 8]
+* [cite_start]데이터의 분포를 분석한 결과, 타겟 변수인 SalePrice는 우측으로 치우친(Right-skewed) 분포를 보였으며 왜도(Skewness)는 1.88에 달했습니다[cite: 9].
+* [cite_start]이는 선형 모델의 전제 조건인 정규성을 위배하므로, `np.log1p` 변환을 적용하여 왜도를 0.12로 보정하였습니다[cite: 10].
+* [cite_start]시각화 도구(Scatter Plot)를 통해 GrLivArea(지상 거주 면적)가 4,000sqft 이상임에도 가격이 매우 낮은 이상치(Outlier) 2건(Index 523, 1298)을 식별하였습니다[cite: 11].
+* [cite_start]이러한 데이터는 모델에 편향된 정보를 제공할 수 있으므로 제거를 결정하였습니다[cite: 12].
 
-```text
-.
-├── 1pager.ipynb
-├── 1pager_original_backup.ipynb
-├── train.csv
-├── test.csv
-├── sample_submission.csv
-├── submission_mlflow_elastic_net.csv
-├── artifacts/
-├── mlruns/
-├── [KMU DS 2026] 팀 1-Pager 양식 (1조).docx
-├── KMU_DS_2026_Team1_HousePrice_Process_Report.docx
-├── KMU_DS_2026_Team1_HousePrice_Process_Report.md
-└── README.md
-```
+### [cite_start]Step 2: 결측치 처리 및 데이터 정제 [cite: 13]
+* [cite_start]결측치 처리는 단순히 평균값으로 대체하는 것이 아니라 변수의 의미에 따라 차등 적용하였습니다[cite: 14].
+* [cite_start]**범주형 변수**: Garage, Basement, Pool 등 부대시설 관련 결측치는 해당 시설의 "부재"를 의미하는 "None"으로 명시적 대치하였습니다[cite: 15].
+* [cite_start]**수치형 변수**: LotFrontage(도로 인접 거리)는 인근 동네(Neighborhood)의 특성이 반영되므로 동네별 중앙값으로 대치하였습니다[cite: 15]. [cite_start]그 외 면적 관련 결측치는 0으로 처리하였습니다[cite: 16].
+* [cite_start]**품질 인코딩**: ExterQual, BsmtQual 등 품질 변수들은 TA(3), Gd(4), Ex(5)와 같이 수치적 순서가 의미를 가지므로 Ordinal Encoding을 적용하여 변수 간의 관계를 보존하였습니다[cite: 16].
 
-| 파일/폴더 | 설명 |
-|---|---|
-| `1pager.ipynb` | 최종 분석 노트북 |
-| `train.csv`, `test.csv` | Kaggle House Prices 데이터 |
-| `submission_mlflow_elastic_net.csv` | 최종 제출 파일 |
-| `mlruns/` | MLflow 실험 기록 |
-| `artifacts/` | 그래프, feature importance 등 산출물 |
-| `KMU_DS_2026_Team1_HousePrice_Process_Report.docx` | 개선 과정 보고서 |
+### [cite_start]Step 3: 고급 피처 엔지니어링 및 통계적 변환 [cite: 17]
+* [cite_start]모델의 성능을 획기적으로 높이기 위해 기존 변수들을 조합한 파생 변수를 생성하였습니다[cite: 18].
+* [cite_start]**TotalSF**: 1stFlrSF + 2ndFlrSF + TotalBsmtSF를 합산하여 집의 실질적인 규모를 나타내는 통합 변수를 생성하였습니다[cite: 19].
+* [cite_start]**QualSF**: TotalSF와 OverallQual을 곱하여 "크면서도 품질이 좋은 집"에 대한 가중치를 부여하였습니다[cite: 19].
+* [cite_start]**Box-Cox 변환**: 75개 이상의 피처에 대해 왜도를 분석하고, 절대값 0.75 이상의 왜도를 가진 수치형 변수들에 대해 Scipy의 `boxcox1p` 변환을 적용하여 정규성을 극대화하였습니다[cite: 19].
 
-## How To Run
+### [cite_start]Step 4: 모델링 전략 및 MLflow 실험 관리 [cite: 20]
+* [cite_start]단일 모델의 한계를 극복하기 위해 다중 모델 실험을 수행하였으며, 모든 과정은 MLflow SQLite 백엔드에 기록하여 성능 변화를 추적하였습니다[cite: 21].
+* [cite_start]**개별 모델 최적화**: XGBoost와 LightGBM에 대해 `n_estimators`와 `learning_rate`를 세밀하게 조정하며 단일 모델 기준 R² 0.92 수준까지 확보하였습니다[cite: 22].
+* [cite_start]**Stacking Ensemble**: Lasso, Ridge, GBR, XGB, LGBM을 Base Learner로 설정하고, 최종 예측치를 Ridge(Meta Learner)로 결합하여 각 모델의 강점을 결합하고 과적합을 방지하였습니다[cite: 22].
 
-1. 저장소 폴더로 이동합니다.
+---
 
-```powershell
-cd C:\Users\kwon\Desktop\codex
-```
+## [cite_start]📊 3. 최종 성과 분석 [cite: 23]
 
-2. Jupyter Notebook을 실행합니다.
+| 평가 지표 | 목표치 | 최종 달성치 | 비고 |
+| :--- | :--- | :--- | :--- |
+| **RMSLE** | 0.13 이하 | **0.1113** | [cite_start]달성 [cite: 24] |
+| **R² (Price 기준)** | 0.93 이상 | **0.9374** | [cite_start]달성 [cite: 24] |
+| **R² (Log 기준)** | 0.93 이상 | **0.9266** | [cite_start]근접 [cite: 24] |
 
-```powershell
-jupyter notebook
-```
+* [cite_start]최종적으로 프로젝트 초기 목표였던 RMSLE 0.13을 압도적으로 달성하였으며, 실제 가격 기준 R² 역시 0.937을 기록하며 주택 가격의 93% 이상을 설명할 수 있는 모델을 구축하는 데 성공하였습니다[cite: 25].
 
-3. `1pager.ipynb`를 열고 위에서부터 순서대로 실행합니다.
+---
 
-노트북 앞부분에는 현재 커널에 필요한 패키지를 확인하고 설치하는 셀이 포함되어 있습니다.  
-만약 `No module named mlflow` 오류가 나면 아래 명령을 노트북 셀에서 먼저 실행한 뒤 커널을 재시작하세요.
+## [cite_start]💡 4. 결론 및 향후 개선 방향 [cite: 26]
+* [cite_start]**결론**: 본 프로젝트를 통해 정밀한 데이터 전처리와 도메인 지식 기반의 피처 생성이 단순한 모델 튜닝보다 훨씬 큰 성능 향상을 가져온다는 것을 확인하였습니다[cite: 27]. [cite_start]특히 Box-Cox 변환과 이상치 제거는 정규성을 높여 모델의 예측 신뢰도를 확보하는 데 결정적인 역할을 하였습니다[cite: 28].
+* [cite_start]**향후 과제**: 향후 개선을 위해서는 앙상블 가중치를 Bayesian Optimization으로 더욱 세밀하게 최적화하거나, 외부 경제 지표(이자율, 지역별 발전 계획 등)를 추가하여 모델의 시계열적 예측력을 보강할 수 있을 것으로 기대됩니다[cite: 29].
 
-```python
-%pip install mlflow
-```
+---
 
-## MLflow
-
-MLflow UI는 다음 명령으로 실행할 수 있습니다.
-
-```powershell
-mlflow ui --backend-store-uri .\mlruns
-```
-
-브라우저에서 아래 주소로 접속합니다.
-
-```text
-http://127.0.0.1:5000
-```
-
-실험 이름:
-
-```text
-KMU_DS_2026_Team1_HousePrice_1Pager
-```
-
-MLflow에는 다음 항목을 기록했습니다.
-
-- 모델명
-- 검증 방식
-- 타깃 변환 방식
-- feature 개수
-- RMSLE
-- RMSE
-- R²(log)
-- R²(price)
-- CV 평균/표준편차
-- 제출 파일
-- 주요 그래프 및 artifact
-- 최종 모델 pipeline
-
-## Modeling Process
-
-### 1. Initial Notebook Review
-
-기존 `1pager.ipynb`는 SHAP, LIME, XGBoost 중심의 실습 코드가 섞여 있었습니다.  
-팀 1-Pager 양식과 연결성이 약했기 때문에 먼저 노트북을 다음 구조로 재정리했습니다.
-
-- WHY: 비즈니스 문제
-- WHAT: 성공 지표
-- WHO: 팀과 역할
-- HOW: 데이터와 ML 접근법
-- WHEN: 마일스톤
-- RISK: 리스크와 가정
-
-### 2. Initial MLflow Setup
-
-초기에는 다음 모델을 비교했습니다.
-
-- Ridge
-- RandomForest
-- GradientBoosting
-- XGBoost
-
-초기 결과는 다음과 같았습니다.
-
-| 모델 | Hold-out RMSLE | Hold-out R²(log) | 해석 |
-|---|---:|---:|---|
-| Ridge | 약 `0.1220` | 약 `0.9117` | 기준 모델 |
-| RandomForest | 약 `0.1433` | 약 `0.8782` | 성능 부족 |
-| GradientBoosting | 약 `0.1177` | 약 `0.9178` | 초기 best |
-| XGBoost | 약 `0.1178` | 약 `0.9177` | GradientBoosting과 유사 |
-
-이 단계에서 RMSLE 목표는 달성했지만 R² 목표에는 부족했습니다.
-
-### 3. Encoding And Environment Fixes
-
-작업 중 두 가지 환경 문제가 있었습니다.
-
-첫 번째는 노트북 한글 깨짐 문제였습니다.  
-PowerShell 인코딩 문제로 markdown 셀의 한글이 실제로 `?`로 저장되었습니다. 이후 docx 원문에서 한글 내용을 다시 추출하고, 일부 문구는 유니코드 escape 방식으로 복구했습니다.
-
-두 번째는 `No module named mlflow` 문제였습니다.  
-터미널 Python에는 `mlflow`가 설치되어 있었지만, Jupyter 커널의 Python 환경이 달라 오류가 발생할 수 있었습니다. 이를 해결하기 위해 노트북 앞부분에 현재 커널 기준으로 패키지를 확인하고 설치하는 셀을 추가했습니다.
-
-### 4. Missing Value Handling
-
-처음에는 수치형 결측값을 median, 범주형 결측값을 most frequent로 처리했습니다.  
-하지만 House Prices 데이터에서는 결측값이 단순 누락이 아니라 “시설 없음”을 의미하는 경우가 많습니다.
-
-예를 들어:
-
-- `GarageType` 결측은 차고가 없음을 의미할 수 있음
-- `BsmtQual` 결측은 지하실이 없음을 의미할 수 있음
-- `FireplaceQu` 결측은 벽난로가 없음을 의미할 수 있음
-
-그래서 다음과 같이 개선했습니다.
-
-| 컬럼 유형 | 기존 처리 | 개선 처리 |
-|---|---|---|
-| Garage 계열 | 최빈값 | `None` 또는 `0` |
-| Basement 계열 | 최빈값 | `None` 또는 `0` |
-| Fireplace 계열 | 최빈값 | `None` |
-| Pool, Fence, Alley | 최빈값 | `None` |
-| 면적/개수 계열 | median | `0` |
-
-이렇게 처리하면 모델이 시설 부재 자체를 가격 예측 신호로 학습할 수 있습니다.
-
-### 5. Feature Engineering
-
-결측 처리 개선 후 집값 예측에 중요한 파생변수를 추가했습니다.
-
-| 파생변수 | 의미 |
-|---|---|
-| `TotalSF` | 지하실 + 1층 + 2층 총면적 |
-| `TotalFinishedSF` | 거주 면적 + 지하실 면적 |
-| `TotalBath` | 전체 욕실 수 |
-| `HouseAge` | 판매 연도 기준 주택 연식 |
-| `RemodAge` | 판매 연도 기준 리모델링 후 경과 연수 |
-| `HasGarage` | 차고 보유 여부 |
-| `HasBasement` | 지하실 보유 여부 |
-| `HasFireplace` | 벽난로 보유 여부 |
-| `OverallQual_TotalSF` | 전체 품질 × 총면적 |
-| `OverallQual_GrLivArea` | 전체 품질 × 지상 거주 면적 |
-
-추가 개선 단계에서는 다음 변수도 넣었습니다.
-
-| 추가 변수 | 의미 |
-|---|---|
-| `OverallGrade` | `OverallQual × OverallCond` |
-| `ExterGrade` | 외관 품질 × 외관 상태 |
-| `KitchenQual_OverallQual` | 주방 품질 × 전체 품질 |
-| `GarageScore` | 차고 면적 × 차고 품질 |
-| `BasementScore` | 지하실 면적 × 지하실 품질 |
-| `BathPerRoom` | 방 대비 욕실 수 |
-| `SFPerRoom` | 방당 생활 면적 |
-| `*_log` variables | 주요 면적 변수의 log 변환 |
-
-### 6. Final Model Selection
-
-추가 파생변수를 넣은 뒤 트리 기반 모델보다 선형 규제 모델이 더 좋은 성능을 보였습니다.
-
-최종 모델:
-
-```text
-ElasticNet(alpha=0.001, l1_ratio=0.5)
-```
-
-ElasticNet은 L1과 L2 정규화를 함께 사용합니다.
-
-- L1: 불필요한 feature의 계수를 줄임
-- L2: 계수가 과도하게 커지는 것을 방지
-- one-hot 변수와 파생변수가 많은 상황에서 과적합을 억제
-
-Target Encoding도 실험했지만 성능이 떨어져 최종 선택하지 않았습니다.
-
-| 실험 | CV RMSLE | CV R²(log) | 판단 |
-|---|---:|---:|---|
-| ElasticNet + One-Hot | `0.109541` | `0.924167` | 우수 |
-| ElasticNet stronger + One-Hot | `0.109091` | `0.924699` | 최종 선택 |
-| Ridge + One-Hot | `0.110605` | `0.922759` | 양호 |
-| ElasticNet + Target Encoding | `0.113169` | `0.918871` | 성능 하락 |
-| XGBoost + Target Encoding | `0.116174` | `0.914805` | 성능 하락 |
-
-## Final Results
-
-| 지표 | 최종 값 | 목표 | 결과 |
-|---|---:|---:|---|
-| CV RMSLE | `0.109091` | `<= 0.13` | 달성 |
-| CV R²(log) | `0.924699` | `>= 0.93` | 소폭 미달 |
-| CV R²(price) | `0.937399` | `>= 0.93` | 달성 |
-| Hold-out RMSLE | `0.109340` | `<= 0.13` | 달성 |
-| Hold-out R²(log) | `0.929081` | `>= 0.93` | 거의 근접 |
-| Hold-out R²(price) | `0.942459` | `>= 0.93` | 달성 |
-
-## Key Takeaways
-
-1. 단순히 모델을 복잡하게 만드는 것보다 데이터의 의미를 살리는 전처리가 더 중요했습니다.
-2. 결측값을 최빈값으로 덮는 방식은 시설 부재 정보를 잃게 만들 수 있었습니다.
-3. 집값 데이터에서는 면적, 품질, 연식, 시설 보유 여부의 조합 변수가 성능 개선에 크게 기여했습니다.
-4. 파생변수가 충분히 만들어진 뒤에는 XGBoost보다 ElasticNet이 더 안정적인 성능을 보였습니다.
-5. MLflow를 사용해 실험 기록을 남기면서 어떤 변경이 성능 개선에 도움이 됐는지 추적할 수 있었습니다.
-
-## Submission
-
-최종 제출 파일:
-
-```text
-submission_mlflow_elastic_net.csv
-```
-
-이 파일은 최종 ElasticNet 모델을 전체 학습 데이터로 학습한 뒤 `test.csv`에 대해 예측한 결과입니다.
-
-## Next Steps
-
-- Kaggle에 `submission_mlflow_elastic_net.csv` 제출 후 리더보드 점수 확인
-- CV 점수와 리더보드 점수 차이 점검
-- ElasticNet, Ridge, XGBoost 예측값 블렌딩 실험
-- 고급 이상치 정책 추가 검토
-- `Neighborhood` 등 위치 변수에 대한 추가 encoding 실험
-
+## 👥 5. 프로젝트 팀 (Team 1)
+* **팀장 (Leader)**: 권승협
+* **팀원 (Members)**: 김창희, 장대로, 문일환, 이연준, 박강한, 황현호
